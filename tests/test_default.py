@@ -1,4 +1,4 @@
-from databricks_sql.main import Configuration, Database
+from databricks_sql.client import Configuration, Database
 
 import os
 import unittest
