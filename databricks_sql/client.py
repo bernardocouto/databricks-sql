@@ -117,6 +117,9 @@ class Database(object):
             else:
                 raise exception
 
+    def select(self, table: str):
+        return SelectBuilder(self, table)
+
 
 class DictWrapper(dict):
     def __getattr__(self, item: Any):
@@ -132,3 +135,93 @@ class DictWrapper(dict):
 
     def __setattr__(self, key: str, value: Any):
         self[key] = value
+
+
+class CommandBuilder(object):
+    def __init__(self, database: Any, table: str):
+        self.database = database
+        self.parameters = {}
+        self.table = table
+        self.where_conditions = []
+
+    def execute(self):
+        return self.database.execute(
+            self.command(), parameters=self.parameters, skip_load=True
+        )
+
+    def command(self):
+        pass
+
+    def where(
+        self, field: str, value: Any, constant: bool = False, operator: str = "="
+    ):
+        if constant:
+            self.where_conditions.append("{} {} {}".format(field, operator, value))
+        else:
+            self.parameters[field] = value
+            self.where_conditions.append("{0} {1} %({0})s".format(field, operator))
+        return self
+
+    def where_all(self, data: Any):
+        for value in data.keys():
+            self.where(value, data[value])
+        return self
+
+    def where_build(self):
+        if len(self.where_conditions) > 0:
+            conditions = " AND ".join(self.where_conditions)
+            return "WHERE {}".format(conditions)
+        else:
+            return ""
+
+
+class Page(dict):
+    def __init__(self, page_number: int, page_size: int, data, last):
+        super().__init__()
+        self["data"] = self.data = data
+        self["last"] = self.last = last
+        self["page_number"] = self.page_number = page_number
+        self["page_size"] = self.page_size = page_size
+
+
+class SelectBuilder(CommandBuilder):
+    def __init__(self, database: Database, table: str):
+        super(SelectBuilder, self).__init__(database, table)
+        self.select_fields = ["*"]
+        self.select_group_by = []
+        self.select_order_by = []
+        self.select_page = ""
+
+    def command(self):
+        group_by = ", ".join(self.select_group_by)
+        if group_by != "":
+            group_by = "GROUP BY {}".format(group_by)
+        order_by = ", ".join(self.select_order_by)
+        if order_by != "":
+            order_by = "ORDER BY {}".format(order_by)
+        return "SELECT {} FROM {} {} {} {} {}".format(
+            ", ".join(self.select_fields),
+            self.table,
+            self.where_build(),
+            group_by,
+            order_by,
+            self.select_page,
+        )
+
+    def fields(self, *fields: Any):
+        self.select_fields = fields
+        return self
+
+    def group_by(self, *fields: Any):
+        self.select_group_by = fields
+        return self
+
+    def order_by(self, *fields: Any):
+        self.select_order_by = fields
+        return self
+
+    def paging(self, page: int = 0, size: int = 10):
+        self.select_page = "LIMIT {} OFFSET {}".format(size + 1, page * size)
+        data = self.execute().fetch_all()
+        last = len(data) <= size
+        return Page(page, size, data[:-1] if not last else data, last)
