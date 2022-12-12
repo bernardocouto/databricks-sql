@@ -11,7 +11,7 @@ $ pip install databricks-sql
 ## Configuration
 
 ```python
-from databricks_sql import Configuration
+from databricks_sql.client import Configuration
 
 CONFIGURATION = Configuration.instance(
     access_token="",
