@@ -175,6 +175,42 @@ class CommandBuilder(object):
             return ""
 
 
+class InsertBuilder(CommandBuilder):
+    def __init__(self, database: Database, table: str):
+        super(InsertBuilder, self).__init__(database, table)
+        self.constants = {}
+
+    def set(self, field: str, value: Any, constant: bool = False):
+        if constant:
+            self.constants[field] = value
+        else:
+            self.parameters[field] = value
+        return self
+
+    def set_all(self, data: Any):
+        for value in data.keys():
+            self.set(value, data[value])
+        return self
+
+    def command(self):
+        if len(set(list(self.parameters.keys()) + list(self.constants.keys()))) == len(
+            self.parameters.keys()
+        ) + len(self.constants.keys()):
+            columns = []
+            values = []
+            for field in self.constants:
+                columns.append(field)
+                values.append(self.constants[field])
+            for field in self.parameters:
+                columns.append(field)
+                values.append("%({})s".format(field))
+            return "INSERT INTO {} ({}) VALUES ({})".format(
+                self.table, ", ".join(columns), ", ".join(values)
+            )
+        else:
+            raise ValueError()
+
+
 class Page(dict):
     def __init__(self, page_number: int, page_size: int, data, last):
         super().__init__()

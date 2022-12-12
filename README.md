@@ -48,6 +48,22 @@ with Database() as connection:
     )
 ```
 
+### Insert
+
+```python
+from databricks_sql.client import Database
+
+with Database() as connection:
+    (
+        connection
+        .insert("catalog.schema.table")
+        .set("id", "994238a4-8c18-436a-8c06-29ec89c4c056")
+        .set("name", "Name")
+        .set("description", "Description")
+        .execute()
+    )
+```
+
 ### Paging
 
 #### Paging with where condition
