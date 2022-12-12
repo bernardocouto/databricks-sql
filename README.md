@@ -25,6 +25,36 @@ CONFIGURATION = Configuration.instance(
 
 Databricks SQL usage description:
 
+### Delete
+
+#### Delete with where
+
+```python
+from databricks_sql.client import Database
+
+with Database() as connection:
+    (
+        connection
+        .delete("catalog.schema.table")
+        .where("id", "994238a4-8c18-436a-8c06-29ec89c4c056")
+        .execute()
+    )
+```
+
+#### Delete with where condition
+
+```python
+from databricks_sql.client import Database
+
+with Database() as connection:
+    (
+        connection
+        .delete("catalog.schema.table")
+        .where("description", "%Databricks%", operator="LIKE")
+        .execute()
+    )
+```
+
 ### Execute
 
 ```python

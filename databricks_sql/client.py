@@ -92,6 +92,9 @@ class Database(object):
             server_hostname=self.configuration.server_hostname,
         )
 
+    def delete(self, table: str):
+        return DeleteBuilder(self, table)
+
     def execute(self, command: str, parameters: dict = None, skip_load: bool = True):
         cursor = self.connection.cursor()
         if skip_load:
@@ -100,6 +103,9 @@ class Database(object):
             command = self.load(command, parameters)
         cursor.execute(command, parameters)
         return CursorWrapper(cursor)
+
+    def insert(self, table: str):
+        return InsertBuilder(self, table)
 
     def load(self, command: str, parameters: dict = None):
         command = command.replace(".sql", "")
@@ -117,8 +123,28 @@ class Database(object):
             else:
                 raise exception
 
+    def paging(
+        self,
+        command: str,
+        page: int = 0,
+        parameters: dict = None,
+        size: int = 10,
+        skip_load: bool = True,
+    ):
+        if skip_load:
+            command = command
+        else:
+            command = self.load(command, parameters)
+        command = "{} LIMIT {} OFFSET {}".format(command, size + 1, page * size)
+        data = self.execute(command, parameters=parameters, skip_load=True).fetch_all()
+        last = len(data) <= size
+        return Page(page, size, data[:-1] if not last else data, last)
+
     def select(self, table: str):
         return SelectBuilder(self, table)
+
+    def update(self, table: str):
+        return UpdateBuilder(self, table)
 
 
 class DictWrapper(dict):
@@ -173,6 +199,11 @@ class CommandBuilder(object):
             return "WHERE {}".format(conditions)
         else:
             return ""
+
+
+class DeleteBuilder(CommandBuilder):
+    def command(self):
+        return "DELETE FROM {} {}".format(self.table, self.where_build())
 
 
 class InsertBuilder(CommandBuilder):
