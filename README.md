@@ -135,7 +135,7 @@ from databricks_sql.client import Database
 with Database() as connection:
     (
         connection
-        .select("test")
+        .select("catalog.schema.table")
         .execute()
         .fetch_all()
     )
@@ -149,7 +149,7 @@ from databricks_sql.client import Database
 with Database() as connection:
     (
         connection
-        .select("test")
+        .select("catalog.schema.table")
         .execute()
         .fetch_many(1)
     )
@@ -163,7 +163,7 @@ from databricks_sql.client import Database
 with Database() as connection:
     (
         connection
-        .select("test")
+        .select("catalog.schema.table")
         .execute()
         .fetch_one()
     )
@@ -177,7 +177,7 @@ from databricks_sql.client import Database
 with Database() as connection:
     (
         connection
-        .execute("read_by_id", {"id": "994238a4-8c18-436a-8c06-29ec89c4c056"})
+        .execute("command.sql", {"id": "994238a4-8c18-436a-8c06-29ec89c4c056"})
         .fetch_one()
     )
 ```
@@ -226,6 +226,38 @@ with Database() as connection:
         .set("description", "New Description")
         .where_all({"id": "994238a4-8c18-436a-8c06-29ec89c4c056", "name": "Name", "description": "Description"})
         .execute()
+    )
+```
+
+### Using mustache
+
+#### SQL
+
+```sql
+select
+    id,
+    name,
+    description
+from catalog.schema.table
+where 1 = 1
+{{#id}}
+and id = %(id)s
+{{/id}}
+{{#name}}
+and name like %(name)s
+{{/name}}
+```
+
+#### Select with filters
+
+```python
+from databricks_sql.client import Database
+
+with Database() as connection:
+    (
+        connection
+        .execute("command.sql", parameters={"id": "994238a4-8c18-436a-8c06-29ec89c4c056", "name": "Name"})
+        .fetch_one()
     )
 ```
 
