@@ -165,6 +165,40 @@ with Database() as connection:
     )
 ```
 
+### Update
+
+#### Update with where
+
+```python
+from databricks_sql.client import Database
+
+with Database() as connection:
+    (
+        connection
+        .update("catalog.schema.table")
+        .set("name", "New Name")
+        .set("description", "New Description")
+        .where("id", "994238a4-8c18-436a-8c06-29ec89c4c056")
+        .execute()
+    )
+```
+
+#### Update with where all
+
+```python
+from databricks_sql.client import Database
+
+with Database() as connection:
+    (
+        connection
+        .update("catalog.schema.table")
+        .set("name", "New Name")
+        .set("description", "New Description")
+        .where_all({"id": "994238a4-8c18-436a-8c06-29ec89c4c056", "name": "Name", "description": "Description"})
+        .execute()
+    )
+```
+
 ## License
 
 This project is licensed under the terms of the [Apache License 2.0](https://github.com/bernardocouto/databricks-sql/blob/main/LICENSE).

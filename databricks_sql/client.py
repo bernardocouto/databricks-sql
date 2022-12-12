@@ -144,13 +144,13 @@ class CommandBuilder(object):
         self.table = table
         self.where_conditions = []
 
+    def command(self):
+        pass
+
     def execute(self):
         return self.database.execute(
             self.command(), parameters=self.parameters, skip_load=True
         )
-
-    def command(self):
-        pass
 
     def where(
         self, field: str, value: Any, constant: bool = False, operator: str = "="
@@ -180,18 +180,6 @@ class InsertBuilder(CommandBuilder):
         super(InsertBuilder, self).__init__(database, table)
         self.constants = {}
 
-    def set(self, field: str, value: Any, constant: bool = False):
-        if constant:
-            self.constants[field] = value
-        else:
-            self.parameters[field] = value
-        return self
-
-    def set_all(self, data: Any):
-        for value in data.keys():
-            self.set(value, data[value])
-        return self
-
     def command(self):
         if len(set(list(self.parameters.keys()) + list(self.constants.keys()))) == len(
             self.parameters.keys()
@@ -209,6 +197,18 @@ class InsertBuilder(CommandBuilder):
             )
         else:
             raise ValueError()
+
+    def set(self, field: str, value: Any, constant: bool = False):
+        if constant:
+            self.constants[field] = value
+        else:
+            self.parameters[field] = value
+        return self
+
+    def set_all(self, data: Any):
+        for value in data.keys():
+            self.set(value, data[value])
+        return self
 
 
 class Page(dict):
@@ -261,3 +261,32 @@ class SelectBuilder(CommandBuilder):
         data = self.execute().fetch_all()
         last = len(data) <= size
         return Page(page, size, data[:-1] if not last else data, last)
+
+
+class UpdateBuilder(CommandBuilder):
+    def __init__(self, database: Database, table: str):
+        super(UpdateBuilder, self).__init__(database, table)
+        self.statements = []
+
+    def command(self):
+        return f"UPDATE {self.table} {self.set_build()} {self.where_build()}"
+
+    def set(self, field: str, value: Any, constant: bool = False):
+        if constant:
+            self.statements.append("{} = {}".format(field, value))
+        else:
+            self.statements.append("{0} = %({0})s".format(field))
+            self.parameters[field] = value
+        return self
+
+    def set_all(self, data: Any):
+        for value in data.keys():
+            self.set(value, data[value])
+        return self
+
+    def set_build(self):
+        if len(self.statements) > 0:
+            statements = ", ".join(self.statements)
+            return f"SET {statements}"
+        else:
+            return ""
