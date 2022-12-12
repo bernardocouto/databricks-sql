@@ -4,10 +4,10 @@ import os
 import unittest
 
 CONFIGURATION = Configuration.instance(
-    access_token="dapi86fb94449101113d868cc86f3ad6f6fd",
+    access_token="",
     command_directory=os.path.realpath(os.path.curdir) + "/commands/",
-    http_path="/sql/1.0/warehouses/68026949a7a2c807",
-    server_hostname="dbc-90688f5c-6227.cloud.databricks.com",
+    http_path="",
+    server_hostname="",
 )
 
 
