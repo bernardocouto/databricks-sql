@@ -55,7 +55,11 @@ class CursorWrapper(object):
         return [DictWrapper(row.asDict()) for row in self.cursor.fetchmany(size)]
 
     def fetch_one(self):
-        row = self.cursor.fetchone().asDict()
+        row = (
+            self.cursor.fetchone().asDict()
+            if self.cursor.fetchone() is not None
+            else None
+        )
         if row is not None:
             return DictWrapper(row)
         else:
